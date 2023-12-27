@@ -96,6 +96,7 @@ def clear_entries(app):
 
 
 def main():
+    app = QApplication(sys.argv)
     db_directory = read_db_path_from_settings()
     if not os.path.exists(db_directory):
         os.makedirs(db_directory)
@@ -107,7 +108,6 @@ def main():
         c.execute('''CREATE TABLE IF NOT EXISTS customers 
                         (id INTEGER PRIMARY KEY, customer_id INTEGER, customer_name TEXT, customer_address_1 TEXT, customer_address_2 TEXT, customer_phone TEXT, customer_emailfax TEXT)''')
 
-        app = QApplication(sys.argv)
         window = CustomerApp()
         window.show()
 
