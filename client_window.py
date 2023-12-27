@@ -8,58 +8,12 @@ import random
 
 class ClientWindow(QMainWindow):
 
-    def submit_action(self):
-        customer_id = self.customer_id_entry.text()
-        customer_name = self.customer_name_entry.text()
-        customer_address1 = self.customer_address1_entry.text()
-        customer_address2 = self.customer_address2_entry.text()
-        customer_phone = self.customer_phone_entry.text()
-        customer_email_fax = self.customer_emailfax_entry.text()
-
-        if customer_id:
-            self.c.execute("UPDATE customers SET customer_name=?, customer_address1=?, customer_address2=?, customer_emailfax=?, customer_phone=? WHERE customer_id=?",
-                      (customer_name, customer_address1, customer_address2, customer_email_fax, customer_phone, customer_id))
-        else:
-            while True:
-                new_id = random.randint(100000, 999999)
-                self.c.execute("SELECT customer_id FROM customers WHERE customer_id=?", (new_id,))
-                if not self.c.fetchone():
-                    break
-
-            self.c.execute("INSERT INTO customers (customer_id, customer_name, customer_address1, customer_address2, customer_emailfax, customer_phone) VALUES (?, ?, ?, ?, ?, ?)",
-                      (new_id, customer_name, customer_address1, customer_address2, customer_email_fax, customer_phone))
-
-        self.conn.commit()
-        QMessageBox.information(self, "Submitted", f"Information Submitted for {customer_name}")
-        self.view_customers(self)
-
-    def view_customers(self):
-        self.c.execute("SELECT customer_id, customer_name, customer_address1 FROM customers")
-        all_customers = self.c.fetchall()
+    def view_customers(self, c):
+        c.execute("SELECT customer_id, customer_name, customer_address1 FROM customers")
+        all_customers = c.fetchall()
         self.customer_list.clear()
         for customer in all_customers:
             self.customer_list.addItem(f"{customer[0]}: {customer[1]}: {customer[2]}")
-
-    def delete_customer(self):
-        selected_item = self.customer_list.selectedItems()
-        if selected_item:
-            customer_id = selected_item[0].text().split(':')[0]
-            self.c.execute("DELETE FROM customers WHERE customer_id=?", (customer_id,))
-            self.conn.commit()
-            self.view_customers(self)
-            self.clear_entries(self)
-        else:
-            QMessageBox.critical(self, "Error", "No customer selected")
-
-    def clear_entries(self):
-        self.customer_id_entry.setReadOnly(False)
-        self.customer_id_entry.clear()
-        self.customer_id_entry.setReadOnly(True)
-        self.customer_name_entry.clear()
-        self.customer_address1_entry.clear()
-        self.customer_address2_entry.clear()
-        self.customer_phone_entry.clear()
-        self.customer_emailfax_entry.clear()
 
     def __init__(self, conn, c):
         super().__init__()
@@ -67,8 +21,6 @@ class ClientWindow(QMainWindow):
         self.c = c
         self.setWindowTitle("Customer Information")
         self.setGeometry(100, 100, 800, 500)  # Adjusted window size
-
-
 
         # Set style sheets
         darktheme_stylesheet = qdarktheme.load_stylesheet()
@@ -91,13 +43,13 @@ class ClientWindow(QMainWindow):
         main_layout.addWidget(id_frame)
 
         # ID Field
-        self.customer_id_entry = QLineEdit()
-        self.customer_id_entry.setValidator(QIntValidator())
-        self.customer_id_entry.setFont(font)
+        self.client_id_entry = QLineEdit()
+        self.client_id_entry.setValidator(QIntValidator())
+        self.client_id_entry.setFont(font)
         id_label = QLabel("ID:")
         id_label.setFont(label_font)
         id_layout.addWidget(id_label)
-        id_layout.addWidget(self.customer_id_entry)
+        id_layout.addWidget(self.client_id_entry)
 
         # Horizontal Layout for Input Fields (Company Info and Contacts)
         input_layout = QHBoxLayout()
@@ -115,23 +67,23 @@ class ClientWindow(QMainWindow):
         company_info_layout.addRow(company_info_title)
 
         # Company Info Fields
-        self.customer_name_entry = QLineEdit()
-        self.customer_address1_entry = QLineEdit()
-        self.customer_address2_entry = QLineEdit()
-        self.customer_phone_entry = QLineEdit()
-        self.customer_emailfax_entry = QLineEdit()
+        self.client_name_entry = QLineEdit()
+        self.client_address1_entry = QLineEdit()
+        self.client_address2_entry = QLineEdit()
+        self.client_phone_entry = QLineEdit()
+        self.client_emailfax_entry = QLineEdit()
 
         # Validators for Company Info Fields
         phone_reg_exp = QRegExp("[0-9\-]+")
-        self.customer_phone_entry.setValidator(QRegExpValidator(phone_reg_exp))
+        self.client_phone_entry.setValidator(QRegExpValidator(phone_reg_exp))
 
         # Set Fonts and Add Widgets to Company Info Layout
         for label_text, widget in [
-            ("Customer Name:", self.customer_name_entry),
-            ("Address:", self.customer_address1_entry),
-            ("Address:", self.customer_address2_entry),
-            ("Phone #:", self.customer_phone_entry),
-            ("Email/Fax:", self.customer_emailfax_entry)
+            ("Customer Name:", self.client_name_entry),
+            ("Address:", self.client_address1_entry),
+            ("Address:", self.client_address2_entry),
+            ("Phone #:", self.client_phone_entry),
+            ("Email/Fax:", self.client_emailfax_entry)
         ]:
             label = QLabel(label_text)
             label.setFont(label_font)
@@ -202,5 +154,5 @@ class ClientWindow(QMainWindow):
         # Set application-wide stylesheet using qdarktheme
         self.setStyleSheet(darktheme_stylesheet)
 
-        self.submit_button.clicked.connect(lambda: self.submit_action(self, conn, c))
+        self.view_customers(c)
 

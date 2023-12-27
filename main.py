@@ -18,8 +18,8 @@ def load_customer(app, c):
             app.customer_id_entry.setText(customer_id)
             app.customer_id_entry.setReadOnly(True)
             app.customer_name_entry.setText(customer[2])
-            app.customer_address_1_entry.setText(customer[3])
-            app.customer_address_2_entry.setText(customer[4])
+            app.customer_address1_entry.setText(customer[3])
+            app.customer_address2_entry.setText(customer[4])
             app.customer_phone_entry.setText(customer[5])
             app.customer_emailfax_entry.setText(customer[6])
         else:
@@ -41,14 +41,14 @@ def read_db_path_from_settings():
 def submit_action(app, conn, c):
     customer_id = app.customer_id_entry.text()
     customer_name = app.customer_name_entry.text()
-    customer_address_1 = app.customer_address_1_entry.text()
-    customer_address_2 = app.customer_address_2_entry.text()
+    customer_address1 = app.customer_address1_entry.text()
+    customer_address2 = app.customer_address2_entry.text()
     customer_phone = app.customer_phone_entry.text()
     customer_email_fax = app.customer_emailfax_entry.text()
 
     if customer_id:
-        c.execute("UPDATE customers SET customer_name=?, customer_address_1=?, customer_address_2=?, customer_emailfax=?, customer_phone=? WHERE customer_id=?",
-                  (customer_name, customer_address_1, customer_address_2, customer_email_fax, customer_phone, customer_id))
+        c.execute("UPDATE customers SET customer_name=?, customer_address1=?, customer_address2=?, customer_emailfax=?, customer_phone=? WHERE customer_id=?",
+                  (customer_name, customer_address1, customer_address2, customer_email_fax, customer_phone, customer_id))
     else:
         while True:
             new_id = random.randint(100000, 999999)
@@ -56,8 +56,8 @@ def submit_action(app, conn, c):
             if not c.fetchone():
                 break
 
-        c.execute("INSERT INTO customers (customer_id, customer_name, customer_address_1, customer_address_2, customer_emailfax, customer_phone) VALUES (?, ?, ?, ?, ?, ?)",
-                  (new_id, customer_name, customer_address_1, customer_address_2, customer_email_fax, customer_phone))
+        c.execute("INSERT INTO customers (customer_id, customer_name, customer_address1, customer_address2, customer_emailfax, customer_phone) VALUES (?, ?, ?, ?, ?, ?)",
+                  (new_id, customer_name, customer_address1, customer_address2, customer_email_fax, customer_phone))
 
     conn.commit()
     QMessageBox.information(app, "Submitted", f"Information Submitted for {customer_name}")
@@ -65,7 +65,7 @@ def submit_action(app, conn, c):
 
 
 def view_customers(app, c):
-    c.execute("SELECT customer_id, customer_name, customer_address_1 FROM customers")
+    c.execute("SELECT customer_id, customer_name, customer_address1 FROM customers")
     all_customers = c.fetchall()
     app.customer_list.clear()
     for customer in all_customers:
@@ -89,8 +89,8 @@ def clear_entries(app):
     app.customer_id_entry.clear()
     app.customer_id_entry.setReadOnly(True)
     app.customer_name_entry.clear()
-    app.customer_address_1_entry.clear()
-    app.customer_address_2_entry.clear()
+    app.customer_address1_entry.clear()
+    app.customer_address2_entry.clear()
     app.customer_phone_entry.clear()
     app.customer_emailfax_entry.clear()
 
@@ -106,7 +106,7 @@ def main():
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS customers 
-                        (id INTEGER PRIMARY KEY, customer_id INTEGER, customer_name TEXT, customer_address_1 TEXT, customer_address_2 TEXT, customer_phone TEXT, customer_emailfax TEXT)''')
+                        (id INTEGER PRIMARY KEY, customer_id INTEGER, customer_name TEXT, customer_address1 TEXT, customer_address2 TEXT, customer_phone TEXT, customer_emailfax TEXT)''')
 
         window = CustomerApp()
         window.show()

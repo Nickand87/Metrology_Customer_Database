@@ -43,16 +43,16 @@ class CustomerApp(QMainWindow):
 
         self.customer_id_entry = QLineEdit()
         self.customer_name_entry = QLineEdit()
-        self.customer_address_1_entry = QLineEdit()
-        self.customer_address_2_entry = QLineEdit()
+        self.customer_address1_entry = QLineEdit()
+        self.customer_address2_entry = QLineEdit()
         self.customer_phone_entry = QLineEdit()
         self.customer_emailfax_entry = QLineEdit()
 
         # Apply the custom font to input fields
         self.customer_id_entry.setFont(font)
         self.customer_name_entry.setFont(font)
-        self.customer_address_1_entry.setFont(font)
-        self.customer_address_2_entry.setFont(font)
+        self.customer_address1_entry.setFont(font)
+        self.customer_address2_entry.setFont(font)
         self.customer_phone_entry.setFont(font)
         self.customer_emailfax_entry.setFont(font)
 
@@ -61,9 +61,9 @@ class CustomerApp(QMainWindow):
         input_layout.addWidget(QLabel("Customer Name:"))
         input_layout.addWidget(self.customer_name_entry)
         input_layout.addWidget(QLabel("Address Line 1:"))
-        input_layout.addWidget(self.customer_address_1_entry)
+        input_layout.addWidget(self.customer_address1_entry)
         input_layout.addWidget(QLabel("Address Line 2:"))
-        input_layout.addWidget(self.customer_address_2_entry)
+        input_layout.addWidget(self.customer_address2_entry)
         input_layout.addWidget(QLabel("Phone #:"))
         input_layout.addWidget(self.customer_phone_entry)
         input_layout.addWidget(QLabel("Email/Fax:"))

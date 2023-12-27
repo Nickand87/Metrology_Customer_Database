@@ -8,7 +8,7 @@ import sys
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, conn, c):
         super().__init__()
 
         self.setWindowTitle("Dynamic UI Application")
@@ -77,7 +77,7 @@ def read_db_path_from_settings():
         exit()
 
 
-if __name__ == "__main__":
+def main():
     app = QApplication(sys.argv)
 
     db_directory = read_db_path_from_settings()
@@ -94,6 +94,10 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {str(e)}")
 
-    mainWin = MainWindow()
+    mainWin = MainWindow(conn, c)
     mainWin.show()
     sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()
