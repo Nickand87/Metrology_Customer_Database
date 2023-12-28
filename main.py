@@ -1,127 +1,106 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QListWidget, QSizePolicy, QFrame, QMessageBox
-from main_gui import CustomerApp
-import sqlite3
 import os
-import random
+import sys
+import sqlite3
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QStackedWidget, QMessageBox
+from gui import ClientWindow, SettingsWindow  # Assuming ClientWindow is a QWidget subclass defined in another file
+from db_control import DatabaseManager
+import xml.etree.ElementTree as ET
+from styles import dark_style, light_style
+import qdarkstyle
 
 
-def load_customer(app, c):
-    selected_item = app.customer_list.selectedItems()
-    if selected_item:
-        customer_id = selected_item[0].text().split(':')[0]
-        c.execute("SELECT * FROM customers WHERE customer_id=?", (customer_id,))
-        customer = c.fetchone()
-        if customer:
-            clear_entries(app)
-            app.customer_id_entry.setReadOnly(False)
-            app.customer_id_entry.setText(customer_id)
-            app.customer_id_entry.setReadOnly(True)
-            app.customer_name_entry.setText(customer[2])
-            app.customer_address1_entry.setText(customer[3])
-            app.customer_address2_entry.setText(customer[4])
-            app.customer_phone_entry.setText(customer[5])
-            app.customer_emailfax_entry.setText(customer[6])
-        else:
-            QMessageBox.critical(app, "Error", "Customer not found")
-    else:
-        QMessageBox.critical(app, "Error", "No customer selected")
-    view_customers(app, c)
+class MainWindow(QMainWindow):
+    """Main window of the application."""
+    def __init__(self, db_manager):
+        super().__init__()
+        self.setWindowTitle("Dynamic UI Application")
+        self.setGeometry(100, 100, 800, 600)
+        self.db_manager = db_manager
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Setup the UI components."""
+        main_layout = QHBoxLayout()
+        sidebar_layout = QVBoxLayout()
+
+        self.button1 = QPushButton("Clients")
+        self.button1.clicked.connect(lambda: self.switch_page(0))
+        sidebar_layout.addWidget(self.button1)
+
+        self.button2 = QPushButton("Settings")
+        self.button2.clicked.connect(lambda: self.switch_page(1))
+        sidebar_layout.addWidget(self.button2)
+
+        sidebar_layout.addStretch()
+
+        self.stacked_widget = QStackedWidget()
+        self.stacked_widget.addWidget(ClientWindow(self.db_manager))
+        self.stacked_widget.addWidget(SettingsWindow(self.db_manager))
+
+        main_layout.addLayout(sidebar_layout, 1)
+        main_layout.addWidget(self.stacked_widget, 4)
+
+        central_widget = QWidget()
+        central_widget.setLayout(main_layout)
+        self.setCentralWidget(central_widget)
+
+    def switch_page(self, page_index):
+        """Switch between pages in the stacked widget."""
+        self.stacked_widget.setCurrentIndex(page_index)
 
 
 def read_db_path_from_settings():
+    """Read the database path from the XML settings file."""
     try:
-        with open("settings.txt", "r") as file:
-            return file.readline().strip()
-    except FileNotFoundError:
-        QMessageBox.critical(None, "Error", "Settings file not found.")
-        exit()
+        tree = ET.parse('settings.xml')
+        root = tree.getroot()
+        db_path = root.find('database/path').text
+        return db_path
+    except ET.ParseError:
+        QMessageBox.critical(None, "Error", "Error parsing settings.xml.")
+        sys.exit(1)
+    except Exception as e:
+        QMessageBox.critical(None, "Error", f"Error reading settings: {str(e)}")
+        sys.exit(1)
 
 
-def submit_action(app, conn, c):
-    customer_id = app.customer_id_entry.text()
-    customer_name = app.customer_name_entry.text()
-    customer_address1 = app.customer_address1_entry.text()
-    customer_address2 = app.customer_address2_entry.text()
-    customer_phone = app.customer_phone_entry.text()
-    customer_email_fax = app.customer_emailfax_entry.text()
+def read_style_setting():
+    """Read the style setting from settings.xml."""
+    try:
+        tree = ET.parse('settings.xml')
+        root = tree.getroot()
+        return root.find('style/selection').text
+    except Exception:
+        return None  # Return None if the setting is not found
 
-    if customer_id:
-        c.execute("UPDATE customers SET customer_name=?, customer_address1=?, customer_address2=?, customer_emailfax=?, customer_phone=? WHERE customer_id=?",
-                  (customer_name, customer_address1, customer_address2, customer_email_fax, customer_phone, customer_id))
+
+def apply_style(app, style_name):
+    """Apply the selected style to the application."""
+    if style_name == "dark":
+        app.setStyleSheet(dark_style())
+    elif style_name == "light":
+        app.setStyleSheet(light_style())
     else:
-        while True:
-            new_id = random.randint(100000, 999999)
-            c.execute("SELECT customer_id FROM customers WHERE customer_id=?", (new_id,))
-            if not c.fetchone():
-                break
-
-        c.execute("INSERT INTO customers (customer_id, customer_name, customer_address1, customer_address2, customer_emailfax, customer_phone) VALUES (?, ?, ?, ?, ?, ?)",
-                  (new_id, customer_name, customer_address1, customer_address2, customer_email_fax, customer_phone))
-
-    conn.commit()
-    QMessageBox.information(app, "Submitted", f"Information Submitted for {customer_name}")
-    view_customers(app, c)
-
-
-def view_customers(app, c):
-    c.execute("SELECT customer_id, customer_name, customer_address1 FROM customers")
-    all_customers = c.fetchall()
-    app.customer_list.clear()
-    for customer in all_customers:
-        app.customer_list.addItem(f"{customer[0]}: {customer[1]}: {customer[2]}")
-
-
-def delete_customer(app, c, conn):
-    selected_item = app.customer_list.selectedItems()
-    if selected_item:
-        customer_id = selected_item[0].text().split(':')[0]
-        c.execute("DELETE FROM customers WHERE customer_id=?", (customer_id,))
-        conn.commit()
-        view_customers(app, c)
-        clear_entries(app)
-    else:
-        QMessageBox.critical(app, "Error", "No customer selected")
-
-
-def clear_entries(app):
-    app.customer_id_entry.setReadOnly(False)
-    app.customer_id_entry.clear()
-    app.customer_id_entry.setReadOnly(True)
-    app.customer_name_entry.clear()
-    app.customer_address1_entry.clear()
-    app.customer_address2_entry.clear()
-    app.customer_phone_entry.clear()
-    app.customer_emailfax_entry.clear()
+        app.setStyleSheet("")  # Apply default style if the name is not recognized
 
 
 def main():
+    """Main function to start the application."""
     app = QApplication(sys.argv)
+
+    style_setting = read_style_setting()
+    apply_style(app, style_setting)  # Apply the style at the start of the application
+
     db_directory = read_db_path_from_settings()
     if not os.path.exists(db_directory):
         os.makedirs(db_directory)
     db_path = os.path.join(db_directory, "customer_info.db")
 
-    try:
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS customers 
-                        (id INTEGER PRIMARY KEY, customer_id INTEGER, customer_name TEXT, customer_address1 TEXT, customer_address2 TEXT, customer_phone TEXT, customer_emailfax TEXT)''')
+    db_manager = DatabaseManager(db_path)
+    mainWin = MainWindow(db_manager)
+    mainWin.show()
 
-        window = CustomerApp()
-        window.show()
-
-        window.submit_button.clicked.connect(lambda: submit_action(window, conn, c))
-        window.clear_button.clicked.connect(lambda: clear_entries(window))
-        window.load_button.clicked.connect(lambda: load_customer(window, c))
-        window.delete_button.clicked.connect(lambda: delete_customer(window, c, conn))
-        window.customer_list.itemDoubleClicked.connect(lambda item: load_customer(window, c))
-
-        view_customers(window, c)
-
-        sys.exit(app.exec())
-    except Exception as e:
-        print(f"Error: {str(e)}")
+    sys.exit(app.exec_())
 
 
 if __name__ == "__main__":

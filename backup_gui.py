@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHB
     QPushButton, QListWidget, QSizePolicy, QFrame, QSplitter
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
-import qdarkstyle
+import qdarktheme
 
 
 class CustomerApp(QMainWindow):
@@ -12,8 +12,7 @@ class CustomerApp(QMainWindow):
         self.setGeometry(100, 100, 800, 500)  # Adjusted window size
 
         # Set style sheets
-        dark_stylesheet = qdarkstyle.load_stylesheet()
-        light_stylesheet = qdarkstyle.load_stylesheet(qt_api='pyqt5', palette=qdarkstyle.LightPalette())
+        dark_stylesheet = qdarktheme.load_stylesheet()
 
         # Central Widget
         central_widget = QWidget(self)

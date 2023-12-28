@@ -1,24 +1,26 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, \
-    QPushButton, QListWidget, QFormLayout, QListWidgetItem, QFrame, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QListWidget, QFormLayout, QListWidgetItem, QFrame, QMessageBox
 from PyQt5.QtGui import QFont, QIntValidator, QRegExpValidator
 from PyQt5.QtCore import Qt, QRegExp
-import qdarktheme
+import xml.etree.ElementTree as ET
+import qdarkstyle
+from styles import dark_style, light_style
+import sys
 import random
+from db_control import DatabaseManager
 
 
 class ClientWindow(QMainWindow):
 
-    def __init__(self, conn, c):
+    def __init__(self, db_manager):
         super().__init__()
-        self.conn = conn
-        self.c = c
+        self.db_manager = db_manager
         self.initializeUI()
-        self.view_customers(c)
+        self.view_customers()
 
     def initializeUI(self):
         self.setWindowTitle("Customer Information")
         self.setGeometry(100, 100, 800, 500)
-        self.setStyleSheet(qdarktheme.load_stylesheet())
+        #self.setStyleSheet(qdarkstyle.load_stylesheet())
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -146,13 +148,91 @@ class ClientWindow(QMainWindow):
 
     def setupCustomerList(self, layout):
         self.customer_list = QListWidget()
-        layout.addWidget(self.customer_list)
-        self.customer_list.setStyleSheet("alternate-background-color: #505050;")
         self.customer_list.setAlternatingRowColors(True)
+        layout.addWidget(self.customer_list)
 
-    def view_customers(self, c):
-        c.execute("SELECT customer_id, customer_name, customer_address1 FROM customers")
-        all_customers = c.fetchall()
+    def view_customers(self):
+        self.db_manager.cursor.execute("SELECT customer_id, customer_name, customer_address1 FROM customers")
+        all_customers = self.db_manager.cursor.fetchall()
         self.customer_list.clear()
         for customer in all_customers:
             self.customer_list.addItem(f"{customer[0]}: {customer[1]}: {customer[2]}")
+
+
+class SettingsWindow(QMainWindow):
+
+    def __init__(self, db_manager):
+        super().__init__()
+        self.db_manager = db_manager
+        self.initializeUI()
+
+    def initializeUI(self):
+        self.setWindowTitle("Settings")
+        self.setGeometry(100, 100, 800, 500)
+        self.setStyleSheet(qdarkstyle.load_stylesheet())
+
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
+
+        # Database Path Setting
+        db_path_layout = QHBoxLayout()
+        self.db_path_label = QLabel("Database Path:")
+        self.db_path_entry = QLineEdit()
+        db_path_layout.addWidget(self.db_path_label)
+        db_path_layout.addWidget(self.db_path_entry)
+        layout.addLayout(db_path_layout)
+
+        # Style Selection Setting
+        style_layout = QHBoxLayout()
+        self.style_label = QLabel("Style Selection:")
+        self.style_entry = QLineEdit()
+        style_layout.addWidget(self.style_label)
+        style_layout.addWidget(self.style_entry)
+        layout.addLayout(style_layout)
+
+        # Load current settings
+        self.load_settings()
+
+        # Save Button
+        self.save_button = QPushButton("Save Settings")
+        self.save_button.clicked.connect(self.save_settings)
+        layout.addWidget(self.save_button)
+
+        def apply_style(self, style_name):
+            """Apply the selected style to the application."""
+            if style_name == "dark":
+                self.setStyleSheet(dark_style)
+            elif style_name == "light":
+                self.setStyleSheet(light_style)
+            else:
+                self.setStyleSheet("")  # Default style
+
+    def load_settings(self):
+        """Load settings from the XML file and update the UI."""
+        try:
+            tree = ET.parse('settings.xml')
+            root = tree.getroot()
+            db_path = root.find('database/path').text
+            style_selection = root.find('style/selection').text
+            self.db_path_entry.setText(db_path)
+            self.style_entry.setText(style_selection)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error loading settings: {str(e)}")
+
+    def save_settings(self):
+        """Save the settings to the XML file."""
+        try:
+            tree = ET.parse('settings.xml')
+            root = tree.getroot()
+            root.find('database/path').text = self.db_path_entry.text()
+            style_selection = self.style_entry.text()
+            root.find('style/selection').text = style_selection
+            tree.write('settings.xml')
+
+            self.apply_style(style_selection)  # Apply the selected style
+
+            QMessageBox.information(self, "Success", "Settings saved successfully.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error saving settings: {str(e)}")
+
